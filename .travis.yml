@@ -1,30 +1,28 @@
-language: c
-sudo: false
-os:
-  - linux
-  - osx
+env:
+  global:
+
 addons:
-  apt:
-    packages:
-      - nasm
-      - diffutils
-compiler:
-  - clang
-  - gcc
-matrix:
-    exclude:
-        - os: osx
-          compiler: gcc
-cache:
-  directories:
-    - ffmpeg-samples
-before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
-install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install nasm; fi
-script:
-  - mkdir -p ffmpeg-samples
-  - ./configure --samples=ffmpeg-samples --cc=$CC
-  - make -j 8
-  - make fate-rsync
-  - make check -j 8
+  coverity_scan:
+
+    # GitHub project metadata
+    # ** specific to your project **
+    project:
+      name: nuomi2021/FFmpeg
+      version: 1.0
+      description: ffvvc
+
+    # Where email notification of build analysis results will be sent
+    notification_email: nuomi2021@gmail.com
+
+    # Commands to prepare for build_command
+    # ** likely specific to your build **
+    build_command_prepend: ./configure --disable-asm --enable-ffmpeg --disable-everything --enable-decoder=vvc --enable-parser=vvc --enable-demuxer=vvc --enable-protocol=file,pipe --enable-encoder=rawvideo --enable-muxer=rawvideo,md5
+
+    # The command that will be added as an argument to "cov-build" to compile your project for analysis,
+    # ** likely specific to your build **
+    build_command: make
+
+    # Pattern to match selecting branches that will run analysis. We recommend leaving this set to 'coverity_scan'.
+    # Take care in resource usage, and consider the build frequency allowances per
+    #   https://scan.coverity.com/faq#frequency
+    branch_pattern: coverity_scan

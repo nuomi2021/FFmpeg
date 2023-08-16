@@ -47,6 +47,7 @@ typedef struct VVCRowThread {
     VVCTask reconstruct_task;
     VVCTask deblock_v_task;
     VVCTask sao_task;
+    atomic_int inter_count;
     atomic_int progress[VVC_PROGRESS_LAST];
 } VVCRowThread;
 
@@ -364,7 +365,7 @@ static int run_inter(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     if (slice_idx != -1) {
         lc->sc = fc->slices[slice_idx];
         ff_vvc_predict_inter(lc, rs);
-        if (!t->rx)
+        if (atomic_fetch_add(&ft->rows[t->ry].inter_count, 1) == ft->ctu_width - 1)
             ff_vvc_frame_add_task(s, &ft->rows[t->ry].reconstruct_task);
     }
     set_avail(ft, t->rx, t->ry, VVC_TASK_TYPE_INTER);
@@ -737,6 +738,7 @@ int ff_vvc_frame_thread_init(VVCFrameContext *fc)
 
         row->reconstruct_task.rx = 0;
         memset(&row->progress[0], 0, sizeof(row->progress));
+        row->inter_count = 0;
         row->deblock_v_task.rx = 0;
         row->sao_task.rx = 0;
     }

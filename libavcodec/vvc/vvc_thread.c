@@ -45,6 +45,7 @@
 
 typedef struct VVCRowThread {
     VVCTask reconstruct_task;
+    VVCTask lmcs_task;
     VVCTask deblock_v_task;
     VVCTask sao_task;
     atomic_int inter_count;
@@ -389,13 +390,14 @@ static int run_recon(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
         }
 
         set_avail(ft, t->rx, t->ry, VVC_TASK_TYPE_RECON);
-        add_task(s, ft->tasks + rs, VVC_TASK_TYPE_LMCS);
 
         t->rx++;
     } while (t->rx < ft->ctu_width && is_recon_ready(fc, t));
 
     if (t->rx < ft->ctu_width)
         ff_vvc_frame_add_task(s, t);
+    else
+        ff_vvc_frame_add_task(s, &ft->rows[t->ry].lmcs_task);
     return 0;
 }
 
@@ -404,18 +406,24 @@ static int run_lmcs(VVCContext *s, VVCLocalContext *lc, VVCTask *t)
     VVCFrameContext *fc = lc->fc;
     VVCFrameThread *ft  = fc->frame_thread;
     const int ctu_size  = ft->ctu_size;
-    const int x0        = t->rx * ctu_size;
-    const int y0        = t->ry * ctu_size;
-    const int rs        = t->ry * ft->ctu_width + t->rx;
-    const int slice_idx = fc->tab.slice_idx[rs];
+    do {
+        const int rs = t->ry * ft->ctu_width + t->rx;
+        const int slice_idx = fc->tab.slice_idx[rs];
+        const int x0        = t->rx * ctu_size;
+        const int y0        = t->ry * ctu_size;
 
-    if (slice_idx != -1) {
-        lc->sc = fc->slices[slice_idx];
-        ff_vvc_lmcs_filter(lc, x0, y0);
-    }
-    set_avail(ft, t->rx, t->ry, VVC_TASK_TYPE_LMCS);
-    if (!t->rx)
-        add_task(s, &ft->rows[t->ry].deblock_v_task, VVC_TASK_TYPE_DEBLOCK_V);
+        if (slice_idx != -1) {
+            ff_vvc_lmcs_filter(lc, x0, y0);
+        }
+
+        set_avail(ft, t->rx, t->ry, VVC_TASK_TYPE_LMCS);
+        t->rx++;
+    } while (t->rx < ft->ctu_width && is_lmcs_ready(fc, t));
+
+     if (t->rx < ft->ctu_width)
+         ff_vvc_frame_add_task(s, t);
+     else
+         add_task(s, &ft->rows[t->ry].deblock_v_task, VVC_TASK_TYPE_DEBLOCK_V);
 
     return 0;
 }
@@ -698,6 +706,8 @@ int ff_vvc_frame_thread_init(VVCFrameContext *fc)
             row->sao_task.ry = y;
             ff_vvc_task_init(&row->reconstruct_task, VVC_TASK_TYPE_RECON, fc);
             row->reconstruct_task.ry = y;
+            ff_vvc_task_init(&row->lmcs_task, VVC_TASK_TYPE_LMCS, fc);
+            row->lmcs_task.ry = y;
         }
 
         ft->cols = av_calloc(ft->ctu_width, sizeof(*ft->cols));
@@ -737,6 +747,7 @@ int ff_vvc_frame_thread_init(VVCFrameContext *fc)
         VVCRowThread *row = ft->rows + y;
 
         row->reconstruct_task.rx = 0;
+        row->lmcs_task.rx = 0;
         memset(&row->progress[0], 0, sizeof(row->progress));
         row->inter_count = 0;
         row->deblock_v_task.rx = 0;

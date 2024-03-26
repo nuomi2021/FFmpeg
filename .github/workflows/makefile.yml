@@ -48,9 +48,9 @@ jobs:
           - os: { name: windows, runner: windows-latest, shell: 'msys2 {0}', runner_threads: 1 }
             compiler: { name: clang, flags: --cc=clang }
           - os: { name: windows, runner: windows-latest, shell: 'msys2 {0}', runner_threads: 1 }
-            compiler: { name: clang-usan, flags: '--toolchain=clang-usan --disable-asm --disable-optimizations' }
+            compiler: { name: clang-usan, flags: '--toolchain=clang-usan --disable-optimizations' }
           - os: { name: windows, runner: windows-latest, shell: 'msys2 {0}', runner_threads: 1 }
-            compiler: { name: clang-asan, flags: '--toolchain=clang-asan --disable-asm --disable-optimizations' }
+            compiler: { name: clang-asan, flags: '--toolchain=clang-asan --disable-optimizations' }
 
     runs-on: ${{ matrix.os.runner }}
     defaults:

@@ -234,23 +234,20 @@
 
 ; in: %2 clobbered
 ; out: %1
-; mask in m11
-; clobbers m10
-%macro MASKED_COPY 2
-    pand             %2, m11 ; and mask
-    pandn           m10, m11, %1; and -mask
-    por              %2, m10
-    mova             %1, %2
+; mask in %3, will be clobbered
+%macro MASKED_COPY2 3
+%ifnum sizeof%1
+    PBLENDVB         %1, %2, %3
+%else
+    vpmaskmovd       %1, %3, %2
+%endif
 %endmacro
 
 ; in: %2 clobbered
 ; out: %1
-; mask in %3, will be clobbered
-%macro MASKED_COPY2 3
-    pand             %2, %3 ; and mask
-    pandn            %3, %1; and -mask
-    por              %2, %3
-    mova             %1, %2
+; mask in m11
+%macro MASKED_COPY 2
+    MASKED_COPY2 %1, %2, m11
 %endmacro
 
 ; input in m0 ... m7, beta in r2 tcs in r3. Output in m1...m6

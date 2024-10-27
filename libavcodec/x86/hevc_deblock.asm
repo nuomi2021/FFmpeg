@@ -26,7 +26,7 @@
 %include "h26x/h2656_deblock.asm"
 
 %macro LUMA_DEBLOCK_BODY 2
-    H2656_LUMA_DEBLOCK_BODY %1, %2
+    H2656_LUMA_DEBLOCK_BODY hevc, %1, %2
 %endmacro
 
 SECTION_RODATA

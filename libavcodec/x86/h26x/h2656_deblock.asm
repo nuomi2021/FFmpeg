@@ -671,41 +671,16 @@
     MASKED_COPY      m4, m8
 %endmacro
 
-%macro H2656_CHROMA_DEBLOCK 13
-    psubw            %5, %4, %3; q0 - p0
-    psubw            %8, %7, %6; p1 - q1
-    psllw            %5, 2; << 2
-    paddw            %8, %5;
+%macro H2656_CHROMA_DEBLOCK 10 ;(dst0, dst1, p1, p0, q0, q1, -tc, tc, tmp1, tmp2)
+    psubw            %9, %5, %4; q0 - p0
+    psubw           %10, %3, %6; p1 - q1
+    psllw            %9, 2; << 2
+    paddw           %10, %9;
 
-%ifidn %2, hevc
-    ;tc calculations
-    movq             m6, [tcq]; tc0
-    punpcklwd        m6, m6
-    pshufd           m6, m6, 0xA0; tc0, tc1
-%if cpuflag(ssse3)
-    psignw           m4, m6, [pw_m1]; -tc0, -tc1
-%else
-    pmullw           m4, m6, [pw_m1]; -tc0, -tc1
-%endif
-    ;end tc calculations
-%if %1 > 8
-    psllw            m4, %1-8; << (BIT_DEPTH - 8)
-    psllw            m6, %1-8; << (BIT_DEPTH - 8)
-%endif
-%endif
+    paddw           %10, [pw_4]; +4
+    psraw           %10, 3; >> 3
 
-    paddw            %8, [pw_4]; +4
-    psraw            %8, 3; >> 3
-
-%ifidn %2, hevc
-    pmaxsw           %8, %5
-    pminsw           %8, %9
-    paddw            %3, %8; p0 + delta0
-    psubw            %4, %8; q0 - delta0
-%elifidn %2, vvc
-    pmaxsw           %8, %12
-    pminsw           %8, %13
-    paddw           %10,  %3, %8
-    psubw           %11,  %4, %8
-%endif
+    CLIPW           %10, %7, %8
+    paddw            %1, %4, %10; p0 + delta0
+    psubw            %2, %5, %10; q0 - delta0
 %endmacro

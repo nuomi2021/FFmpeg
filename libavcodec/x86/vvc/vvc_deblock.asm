@@ -49,8 +49,8 @@ SECTION .text
 %endmacro
 
 ALIGN 16
-%macro WEAK_CHROMA 1
-    H2656_CHROMA_DEBLOCK %1, vvc, m3, m4, m12, m5, m2, m13, m9, m14, m15, m8, m9
+%macro WEAK_CHROMA 0
+    H2656_CHROMA_DEBLOCK m14, m15, m2, m3, m4, m5, m8, m9, m12, m13
 %endmacro
 
 %macro CLIP_RESTORE 4  ; toclip, value, -tc, +tc
@@ -490,7 +490,7 @@ ALIGN 16
     cmp              r14, 0
     je              .end_weak_chroma
 
-    WEAK_CHROMA     %1
+    WEAK_CHROMA
 
     movu             m12, m11
     pand             m11, [rsp + 16]

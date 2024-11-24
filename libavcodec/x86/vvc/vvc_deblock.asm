@@ -320,56 +320,45 @@ ALIGN 16
 
 %endmacro
 
+%macro CRHOMA_FILTER 1 ;(dst)
+    paddw               m14, m13
+    paddw               m15, m12, m14
+    H2656_CHROMA_ROUND  m15
+
+    psubw               m15, %1
+    CLIPW               m15, m8, m9 ; clip to [-tc, tc]
+    paddw               m15, %1
+
+    MASKED_COPY          %1, m15
+%endmacro
+
 %macro ONE_SIDE_CHROMA 1
-    pand       m11, [rsp + 16] ; no_p
+    pand       m11, [rsp + 16]      ; no_p
 
-    ; p0
-    paddw          m12, m3, m4 ;      p0 + q0
-    paddw          m12, m5     ;      p0 + q0 + q1
-    paddw          m12, m6     ;      p0 + q0 + q1 + q2
-    paddw          m12, [pw_4] ;      p0 + q0 + q1 + q2 + 4
-    paddw          m12, m2     ; p1 + p0 + q0 + q1 + q2 + 4
-    movu           m15, m12
-    paddw          m12, m2     ; + p1
-    paddw          m12, m2     ; + p1
-    paddw          m12, m3     ; + p0
-    psrlw          m12, 3
+    paddw          m12, m3, m4      ; p0 + q0
+    paddw          m13, m5, m6      ; q1 + q2
+    paddw          m12, m13         ; p0 + q0 + q1 + q2
 
-    CLIP_RESTORE   m12, m3, m8, m9
-    MASKED_COPY    m3, m12  ; m2
+    ; P0
+    paddw          m13, m2, m2      ; 2 * p1
+    paddw          m14, m2, m3      ; p1 + p0
+    CRHOMA_FILTER  m3
 
-    ; q0
-    movu         m11, [rsp + 32] ; strong mask
-    pand         m11, [rsp]      ; no_q
+    movu         m11, [rsp + 32]    ; strong mask
+    pand         m11, [rsp]         ; no_q
 
-    paddw          m12, m2, m15 ; + p1
-    paddw          m12, m4      ;  q0
-    paddw          m12, m7      ; q3
-    psrlw          m12, 3
+    ; Q0
+    paddw          m14, m4, m7      ; q0 + q3
+    CRHOMA_FILTER  m4
 
-    CLIP_RESTORE   m12, m4, m8, m9
+    ; Q1
+    paddw          m13, m7, m7      ; 2 * q3
+    paddw          m14, m2, m5      ; p1 + q1
+    CRHOMA_FILTER  m5
 
-    ; q1
-    psllw          m13, m7, 1 ; 2*q3
-    paddw          m13, m15
-    paddw          m13, m5   ; q1
-    psrlw          m13, 3
-
-    CLIP_RESTORE   m13, m5, m8, m9
-
-    ;q2
-    psllw          m14, m7, 1  ;2*q3
-    paddw          m14, m7     ;3*q3
-    paddw          m14, m15    ;
-    paddw          m14, m6  ; q2
-    psubw          m14, m2  ; sub p1
-    psrlw          m14, 3
-
-    CLIP_RESTORE   m14, m6, m8, m9
-
-    MASKED_COPY   m4, m12 ; m3
-    MASKED_COPY   m5, m13 ; m4
-    MASKED_COPY   m6, m14 ; m5
+    ; Q2
+    paddw          m14, m6, m7      ; q2 + q3
+    CRHOMA_FILTER  m6
 %endmacro
 
 ; CHROMA_DEBLOCK_BODY(bit_depth)

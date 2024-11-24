@@ -21,6 +21,7 @@ pd_1 :           times 4 dd 1
 
 cextern pw_4
 cextern pw_8
+cextern pw_4096
 cextern pw_m1
 
 SECTION .text

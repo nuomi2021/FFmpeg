@@ -671,16 +671,25 @@
     MASKED_COPY      m4, m8
 %endmacro
 
+; (%1 + 4) >> 3
+%macro H2656_CHROMA_ROUND 1 ;(dst/src)
+%if cpuflag(sse2)
+    paddw           %1, [pw_4];
+    psraw           %1, 3
+%else
+    pmulhrsw        %1, [pw_4096]
+%endif
+%endmacro
+
 %macro H2656_CHROMA_DEBLOCK 10 ;(dst0, dst1, p1, p0, q0, q1, -tc, tc, tmp1, tmp2)
-    psubw            %9, %5, %4; q0 - p0
-    psubw           %10, %3, %6; p1 - q1
-    psllw            %9, 2; << 2
-    paddw           %10, %9;
+    psubw                %9, %5, %4; q0 - p0
+    psubw               %10, %3, %6; p1 - q1
+    psllw                %9, 2; << 2
+    paddw               %10, %9;
 
-    paddw           %10, [pw_4]; +4
-    psraw           %10, 3; >> 3
+    H2656_CHROMA_ROUND  %10
 
-    CLIPW           %10, %7, %8
-    paddw            %1, %4, %10; p0 + delta0
-    psubw            %2, %5, %10; q0 - delta0
+    CLIPW               %10, %7, %8
+    paddw                %1, %4, %10; p0 + delta0
+    psubw                %2, %5, %10; q0 - delta0
 %endmacro

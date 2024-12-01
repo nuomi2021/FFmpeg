@@ -62,6 +62,18 @@ ALIGN 16
     psubw             %4, %2
 %endmacro
 
+%macro CRHOMA_FILTER 1 ;(dst)
+    paddw               m15, m14
+    paddw               m15, m13
+    H2656_CHROMA_ROUND  m15
+
+    psubw               m15, %1
+    CLIPW               m15, m8, m9 ; clip to [-tc, tc]
+    paddw               m15, %1
+
+    MASKED_COPY          %1, m15
+%endmacro
+
 %macro STRONG_CHROMA 1
     cmp            no_pq, 0
     je      .end_p_calcs
@@ -318,44 +330,32 @@ ALIGN 16
 
 %endmacro
 
-%macro CRHOMA_FILTER 1 ;(dst)
-    paddw               m14, m13
-    paddw               m15, m12, m14
-    H2656_CHROMA_ROUND  m15
-
-    psubw               m15, %1
-    CLIPW               m15, m8, m9 ; clip to [-tc, tc]
-    paddw               m15, %1
-
-    MASKED_COPY          %1, m15
-%endmacro
-
 %macro ONE_SIDE_CHROMA 1
     pand       m11, [rsp + 16]      ; no_p
 
     paddw          m12, m3, m4      ; p0 + q0
     paddw          m13, m5, m6      ; q1 + q2
-    paddw          m12, m13         ; p0 + q0 + q1 + q2
+    paddw          m13, m12         ; p0 + q0 + q1 + q2
 
     ; P0
-    paddw          m13, m2, m2      ; 2 * p1
-    paddw          m14, m2, m3      ; p1 + p0
+    paddw          m14, m2, m2      ; 2 * p1
+    paddw          m15, m2, m3      ; p1 + p0
     CRHOMA_FILTER  m3
 
     movu         m11, [rsp + 32]    ; strong mask
     pand         m11, [rsp]         ; no_q
 
     ; Q0
-    paddw          m14, m4, m7      ; q0 + q3
+    paddw          m15, m4, m7      ; q0 + q3
     CRHOMA_FILTER  m4
 
     ; Q1
-    paddw          m13, m7, m7      ; 2 * q3
-    paddw          m14, m2, m5      ; p1 + q1
+    paddw          m14, m7, m7      ; 2 * q3
+    paddw          m15, m2, m5      ; p1 + q1
     CRHOMA_FILTER  m5
 
     ; Q2
-    paddw          m14, m6, m7      ; q2 + q3
+    paddw          m15, m6, m7      ; q2 + q3
     CRHOMA_FILTER  m6
 %endmacro
 

@@ -54,7 +54,7 @@ ALIGN 16
     H2656_CHROMA_DEBLOCK m14, m15, m2, m3, m4, m5, m8, m9, m12, m13
 %endmacro
 
-%macro CRHOMA_FILTER 1 ;(dst)
+%macro CHROMA_FILTER 1 ;(dst)
     paddw               m15, m14
     paddw               m15, m13
     H2656_CHROMA_ROUND  m15
@@ -81,16 +81,16 @@ ALIGN 16
     ; P2
     paddw          m14, m0, m0       ; 2 * p3
     paddw          m15, m0, m1       ; p3 + p2
-    CRHOMA_FILTER  m1
+    CHROMA_FILTER  m1
 
     ; P1
     paddw          m15, m2, m5       ; p1 + q1
-    CRHOMA_FILTER  m2
+    CHROMA_FILTER  m2
 
     ; P0
     paddw          m14, m0, m3       ; p3 + p0
     paddw          m15, m5, m6       ; q1 + q2
-    CRHOMA_FILTER  m3
+    CHROMA_FILTER  m3
 .end_p_calcs:
 
     cmp            no_qq, 0
@@ -101,20 +101,20 @@ ALIGN 16
     ; Q0
     paddw          m14, m4, m5       ; q0 + q1
     paddw          m15, m6, m7       ; q2 + q3
-    CRHOMA_FILTER  m4
+    CHROMA_FILTER  m4
 
     ; Q1
     psubw          m10, m5           ; p2 - q1
     psubw          m13, m10          ; p1 + p0 + q0 + q1
     paddw          m14, m7, m7       ; 2 * q3
     paddw          m15, m5, m6       ; q1 + q2
-    CRHOMA_FILTER  m5
+    CHROMA_FILTER  m5
 
     ; Q2
     psubw          m12, m6           ; p1 - q2
     psubw          m13, m12          ; p0 + q0 + q1 + q2
     paddw          m15, m6, m7       ; q2 + q3
-    CRHOMA_FILTER  m6
+    CHROMA_FILTER  m6
 
 .end_q_calcs:
 %endmacro
@@ -306,23 +306,23 @@ ALIGN 16
     ; P0
     paddw          m14, m2, m2      ; 2 * p1
     paddw          m15, m2, m3      ; p1 + p0
-    CRHOMA_FILTER  m3
+    CHROMA_FILTER  m3
 
     movu         m11, [rsp + 32]    ; strong mask
     pand         m11, [rsp]         ; no_q
 
     ; Q0
     paddw          m15, m4, m7      ; q0 + q3
-    CRHOMA_FILTER  m4
+    CHROMA_FILTER  m4
 
     ; Q1
     paddw          m14, m7, m7      ; 2 * q3
     paddw          m15, m2, m5      ; p1 + q1
-    CRHOMA_FILTER  m5
+    CHROMA_FILTER  m5
 
     ; Q2
     paddw          m15, m6, m7      ; q2 + q3
-    CRHOMA_FILTER  m6
+    CHROMA_FILTER  m6
 %endmacro
 
 ; CHROMA_DEBLOCK_BODY(bit_depth)

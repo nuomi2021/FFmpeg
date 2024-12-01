@@ -54,14 +54,6 @@ ALIGN 16
     H2656_CHROMA_DEBLOCK m14, m15, m2, m3, m4, m5, m8, m9, m12, m13
 %endmacro
 
-%macro CLIP_RESTORE 4  ; toclip, value, -tc, +tc
-    paddw             %3, %2
-    paddw             %4, %2
-    CLIPW             %1, %3, %4
-    psubw             %3, %2
-    psubw             %4, %2
-%endmacro
-
 %macro CRHOMA_FILTER 1 ;(dst)
     paddw               m15, m14
     paddw               m15, m13
@@ -75,81 +67,55 @@ ALIGN 16
 %endmacro
 
 %macro STRONG_CHROMA 1
+    mova            m10, m1          ; save p2
+    mova            m12, m2          ; save p1
+
+    paddw           m14, m1, m2      ; p2 + p1
+    paddw           m13, m3, m4      ; p0 + q0
+    paddw           m13, m14         ; p2 + p1 + p0 + q0
+
     cmp            no_pq, 0
     je      .end_p_calcs
     pand             m11, [rsp + 16] ; which p
 
-    ; p0
-    paddw            m12, m0, m1
-    paddw            m12, m2
-    paddw            m12, m3
-    paddw            m12, m4
-    paddw            m12, [pw_4]
-    movu             m15, m12      ; p3 +  p2 + p1 +  p0 + q0 + 4
-    paddw            m12, m3
-    paddw            m12, m5       ; q1
-    paddw            m12, m6       ; q2
-    psraw            m12, 3
+    ; P2
+    paddw          m14, m0, m0       ; 2 * p3
+    paddw          m15, m0, m1       ; p3 + p2
+    CRHOMA_FILTER  m1
 
-    ; p1
-    paddw            m13, m15, m0     ; + p3
-    paddw            m13, m2          ; + p1
-    paddw            m13, m5          ; + q1
-    psraw            m13, 3
-    CLIP_RESTORE     m13, m2, m8, m9
+    ; P1
+    paddw          m15, m2, m5       ; p1 + q1
+    CRHOMA_FILTER  m2
 
-    ; p2
-    psllw            m14, m0, 1       ; 2*p3
-    paddw            m14, m15
-    paddw            m14, m1          ; + p2
-    psraw            m14, 3
+    ; P0
+    paddw          m14, m0, m3       ; p3 + p0
+    paddw          m15, m5, m6       ; q1 + q2
+    CRHOMA_FILTER  m3
 .end_p_calcs:
 
-    ; q0
     cmp            no_qq, 0
     je      .end_q_calcs
-    movu             m11, [rsp + 32]; strong
-    pand             m11, [rsp ]    ; strong & q
+    movu             m11, [rsp + 32] ; strong
+    pand             m11, [rsp ]     ; strong & q
 
-    paddw            m15, m3, m4    ; p0 + q0
+    ; Q0
+    paddw          m14, m4, m5       ; q0 + q1
+    paddw          m15, m6, m7       ; q2 + q3
+    CRHOMA_FILTER  m4
 
-    CLIP_RESTORE     m12, m3, m8, m9
-    MASKED_COPY       m3, m12        ; p0
+    ; Q1
+    psubw          m10, m5           ; p2 - q1
+    psubw          m13, m10          ; p1 + p0 + q0 + q1
+    paddw          m14, m7, m7       ; 2 * q3
+    paddw          m15, m5, m6       ; q1 + q2
+    CRHOMA_FILTER  m5
 
-    paddw            m15, m5        ; + q1
-    paddw            m15, m6        ; + q2
-    paddw            m15, m7        ; + q3
-    paddw            m15, [pw_4]
-    movu             m12, m15       ; p0 + q0 + q1 + q2 + q3 + 4
-    paddw            m12, m1        ; + p2  -- p2 is unused after this point
+    ; Q2
+    psubw          m12, m6           ; p1 - q2
+    psubw          m13, m12          ; p0 + q0 + q1 + q2
+    paddw          m15, m6, m7       ; q2 + q3
+    CRHOMA_FILTER  m6
 
-    CLIP_RESTORE     m14, m1, m8, m9
-    MASKED_COPY       m1, m14       ; p2
-
-    paddw            m12, m2        ; + p1
-    paddw            m12, m4        ; + q0
-    psraw            m12, 3
-    CLIP_RESTORE     m12, m4, m8, m9
-
-    ; q1
-    paddw            m14, m2, m15; p0 + ...   + p1
-    paddw            m14, m5     ; + q1
-    paddw            m14, m7     ; + q3
-    psraw            m14, 3
-    CLIP_RESTORE     m14, m5, m8, m9
-
-    ; q2
-    ; clobber m15 - sum is fully used
-    paddw            m15, m7  ; + q3
-    paddw            m15, m7  ; + q3
-    paddw            m15, m6  ; + q2
-    psraw            m15, 3
-    CLIP_RESTORE     m15, m6, m8, m9
-
-    MASKED_COPY       m2, m13  ; p1
-    MASKED_COPY       m4, m12  ; q0
-    MASKED_COPY       m5, m14  ; q1
-    MASKED_COPY       m6, m15  ; q2
 .end_q_calcs:
 %endmacro
 

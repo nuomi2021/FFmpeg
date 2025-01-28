@@ -371,13 +371,13 @@ void checkasm_check_vvc_deblock(void)
 
     for (int bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         ff_vvc_dsp_init(&h, bit_depth);
-        check_deblock_chroma(&h, bit_depth);
-    }
-    report("chroma");
-
-    for (int bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
-        ff_vvc_dsp_init(&h, bit_depth);
         check_deblock_luma(&h, bit_depth);
     }
     report("luma");
+
+    for (int bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
+        ff_vvc_dsp_init(&h, bit_depth);
+        check_deblock_chroma(&h, bit_depth);
+    }
+    report("chroma");
 }

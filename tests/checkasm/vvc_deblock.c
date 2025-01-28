@@ -333,8 +333,8 @@ static void check_deblock_chroma(const VVCDSPContext *h, int bit_depth)
     declare_func(void, uint8_t *pix, ptrdiff_t stride, const int32_t *beta, const int32_t *tc,
                  const uint8_t *no_p, const uint8_t *no_q, const uint8_t *max_len_p, const uint8_t *max_len_q, int shift);
 
-    for(int type = 0; type < sizeof(types)/sizeof(char*); ++type) {
-        for(int shift = 0; shift < 2; ++shift) {
+    for(int type = 0; type < FF_ARRAY_ELEMS(types); ++type) {
+        for(int shift = 0; shift < FF_ARRAY_ELEMS(shifts); ++shift) {
             if (check_func(h->lf.filter_chroma[0], "vvc_h_loop_filter_chroma_%d_%s_%s", bit_depth, types[type], shifts[shift])) {
                 int xstride = 16;            // bytes
                 int ystride = SIZEOF_PIXEL;  // bytes

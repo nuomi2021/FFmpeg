@@ -41,7 +41,7 @@ cextern pw_4096
 cextern pw_8192
 cextern pw_m1
 cextern pd_1
-cextern pd_3
+pd_3 :           times 4 dd  3
 
 %define pw_pixel_max_10 pw_1023
 pw_pixel_max_12: times 8 dw ((1 << 12)-1)
@@ -53,7 +53,7 @@ SECTION .text
     cmp         shiftd, 1
     jne             %%no_shift
 %if %3
-    movdqa          %1, [%2]
+    movu            %1, [%2]
 %else
     pmovzxbd        %1, [%2]
 %endif
